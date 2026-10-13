@@ -143,6 +143,16 @@ test('stability: spin about axis 2 flips (w2 changes sign)', () => {
   assert.notEqual(firstFlip, null, 'w2 never changed sign');
 });
 
+test('stability: default perturbation flips promptly even when (eps, ., eps) is the decaying mode', () => {
+  // For I = (0.5, 1.7, 2), lambda = 0.6 and the eigenvector ratio is 1. With a growing-mode part
+  // of order eps the flip comes at about ln(1/eps)/lambda = 11.5; seeded only by round-off it
+  // would take about ln(1e16)/lambda = 61. Require the first flip before 2 ln(1/eps)/lambda.
+  const I = [0.5, 1.7, 2.0];
+  const bound = (2 * Math.log(1 / EPS)) / growthRate(I, OMEGA);
+  const { firstFlip } = trackSpin(2, I, EPS, 100);
+  assert.ok(firstFlip !== null && firstFlip < bound, `first flip at ${firstFlip}, bound ${bound}`);
+});
+
 // ---------------------------------------------------------------------------
 // Growth rate (CLAUDE.md ground truth 5).
 // Start with a tiny perturbation (1e-8) so the linear regime is long, skip 3/lambda for the
@@ -210,7 +220,9 @@ for (const [I, symAxis] of [
   test(`degenerate: I = (${I}) spun about axis 2 does not flip`, () => {
     assert.equal(growthRate(I, OMEGA), 0);
     const k = symAxis - 1;
-    let s = initialState(2, OMEGA, EPS);
+    // Perturb both off-axis components so the symmetry-axis component is nonzero and the
+    // precession is actually exercised (initialState perturbs only one component).
+    const s = { w: [EPS, OMEGA, EPS], q: [1, 0, 0, 0] };
     const c0 = s.w[k];
     let maxDev = 0;
     let flipped = false;

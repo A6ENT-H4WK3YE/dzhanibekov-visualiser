@@ -80,7 +80,7 @@ without explaining why in the AI log and getting approval.
 
 ## Commands
 
-    node --test tests/              # run physics tests
+    node --test tests/*.test.mjs    # run physics tests (Node 22 does not accept a bare directory)
     python3 -m http.server 8000     # serve locally, then open http://localhost:8000
 
 ES modules do not load from file://, so always use the local server.

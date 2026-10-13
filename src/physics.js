@@ -140,11 +140,18 @@ export function angularMomentumWorld(s, I) {
 // ---------------------------------------------------------------------------
 // Initial conditions and linear stability.
 
-// Spin Omega about body axis `axis` (1, 2 or 3), with `eps` added to each of the other two
-// components (in absolute units, rad/time). Orientation starts at the identity.
+// Spin Omega about body axis `axis` (1, 2 or 3), plus a perturbation `eps` (absolute units,
+// rad/time) on ONE other component: the lowest-numbered axis that is not the spin axis.
+// Orientation starts at the identity.
+// Why only one component: the linearised equations about axis 2 have growing and decaying
+// eigenvectors with both components nonzero, d3/d1 = -/+ sqrt(I1 (I3 - I2) / (I3 (I2 - I1))).
+// An equal perturbation (eps, ., eps) lies exactly on the decaying one whenever that ratio is 1
+// (e.g. I = (0.5, 1.7, 2)), delaying the flip until round-off grows. A single nonzero component
+// always has a growing-mode part, whatever the moments.
 export function initialState(axis, Omega, eps = 1e-3) {
-  const w = [eps, eps, eps];
+  const w = [0, 0, 0];
   w[axis - 1] = Omega;
+  w[axis === 1 ? 1 : 0] = eps;
   return { w, q: [1, 0, 0, 0] };
 }
 

@@ -47,3 +47,22 @@ Disclosure log for AI-assisted work on this project (Claude Code, model Claude O
   directory, so the tests were run with `node --test tests/*.test.mjs`.
 
 **Written by hand:** nothing yet.
+
+## Follow-up fixes after milestone 1 (2026-10-13)
+
+**Asked:** Commit the fix and resolve the open issues.
+
+**Produced:**
+- `initialState` now perturbs only one off-axis component by eps: w2 for spin about axis 1,
+  and w1 for spin about axes 2 and 3. A single component always contains part of the growing
+  mode. The reason is in the code comment.
+- New test: with I = (0.5, 1.7, 2) and eps = 1e-3, the default start must flip before
+  2 ln(1/eps)/lambda, which is 23 time units.
+- The degenerate-case tests now build their (eps, Omega, eps) start explicitly. With the new
+  `initialState`, the I = (1,1,3) case would have w3 = 0, making it a steady spin and so a
+  trivial test.
+- CLAUDE.md test command changed to `node --test tests/*.test.mjs` (Node 22 compatibility).
+
+**Checked:** 29/29 tests pass. Running the old perturbation through the same setup gives a first
+flip at t = 79.9, which would fail the new test. The new perturbation flips at t = 13.5, so the
+test does distinguish the two.
