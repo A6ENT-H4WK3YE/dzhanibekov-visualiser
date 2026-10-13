@@ -19,6 +19,8 @@ import {
   growthRate,
   jacobiEllipticSNCNDN,
   exactOmega,
+  advance,
+  momentsFromArms,
 } from '../src/physics.js';
 
 const I_DEFAULT = [1, 2, 3];
@@ -292,3 +294,67 @@ for (const [w0, I, label] of [
     assert.ok(maxErr < 1e-8, `max relative error ${maxErr}`);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Fixed-step driver: the result must not depend on how time is sliced into frames
+// (CLAUDE.md: step size independent of the frame rate).
+
+test('advance: same simulated time in different frame slices gives the identical state', () => {
+  const s0 = initialState(2, OMEGA, EPS);
+  const runFrames = (frameDt, nFrames) => {
+    let s = s0;
+    let carry = 0;
+    let steps = 0;
+    for (let i = 0; i < nFrames; i++) {
+      const r = advance(s, I_DEFAULT, DEFAULT_DT, frameDt, carry);
+      s = r.state;
+      carry = r.carry;
+      steps += r.steps;
+    }
+    return { s, steps };
+  };
+  const a = runFrames(1 / 60, 600); // 10 time units at 60 fps
+  const b = runFrames(1 / 7, 70); // 10 time units at 7 fps
+  const c = runFrames(10, 1); // one big frame
+  assert.equal(a.steps, 10000);
+  assert.equal(b.steps, 10000);
+  assert.equal(c.steps, 10000);
+  assert.deepEqual(a.s, c.s);
+  assert.deepEqual(b.s, c.s);
+});
+
+test('advance: maxSteps caps work and drops the excess time', () => {
+  const r = advance(initialState(1, OMEGA, EPS), I_DEFAULT, DEFAULT_DT, 5, 0, 100);
+  assert.equal(r.steps, 100);
+  assert.equal(r.carry, 0);
+});
+
+// ---------------------------------------------------------------------------
+// Body model: three centred thin rods. A rod of mass m = rho*a, length a has I = m a^2 / 12
+// about a perpendicular axis through its centre (standard result, e.g. any mechanics text).
+
+test('arms: single rod reproduces m a^2 / 12, zero about its own axis', () => {
+  const I = momentsFromArms([2, 0, 0], 1.5);
+  const expected = (1.5 * 2 * 2 * 2) / 12;
+  close(I[0], 0, 0);
+  close(I[1], expected, 1e-15);
+  close(I[2], expected, 1e-15);
+});
+
+test('arms: longest arm gives smallest moment; equal arms give equal moments', () => {
+  const I = momentsFromArms([3, 2, 1]);
+  assert.ok(I[0] < I[1] && I[1] < I[2], `I = ${I}`);
+  [0.75, 28 / 12, 35 / 12].forEach((x, i) => close(I[i], x, 1e-15));
+  const J = momentsFromArms([2, 2, 1]);
+  close(J[0], J[1], 0);
+});
+
+test('arms: default arm lengths (3, 2, 1) flip about axis 2 and are stable about 1 and 3', () => {
+  const I = momentsFromArms([3, 2, 1]);
+  assert.notEqual(trackSpin(2, I, EPS, 100).firstFlip, null);
+  for (const axis of [1, 3]) {
+    const { firstFlip, maxPerp } = trackSpin(axis, I, EPS, 100);
+    assert.equal(firstFlip, null);
+    assert.ok(maxPerp < 10 * EPS, `axis ${axis}: max off-axis |w| = ${maxPerp}`);
+  }
+});

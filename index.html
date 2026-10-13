@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dzhanibekov Effect</title>
+  <style>
+    :root {
+      --bg: #f6f6f4;
+      --panel: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6b6b70;
+      --border: #dcdcd8;
+      --accent: #3b6ea8;
+      --scene: #e9ebee;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141518;
+        --panel: #1c1d21;
+        --text: #ececee;
+        --muted: #9a9aa2;
+        --border: #2e2f35;
+        --accent: #7aa7dc;
+        --scene: #0e0f12;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    header { padding: 14px 20px 6px; }
+    h1 { font-size: 18px; margin: 0 0 2px; font-weight: 600; }
+    header p { margin: 0; color: var(--muted); }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 16px;
+      padding: 12px 20px 20px;
+    }
+    #scene {
+      position: relative;
+      min-height: 480px;
+      height: calc(100vh - 110px);
+      background: var(--scene);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #scene canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    #scene canvas:active { cursor: grabbing; }
+    .legend {
+      position: absolute; left: 12px; bottom: 10px;
+      display: flex; gap: 12px; flex-wrap: wrap;
+      font-size: 12px; color: var(--muted);
+      pointer-events: none;
+    }
+    .legend span::before {
+      content: ""; display: inline-block; width: 10px; height: 10px;
+      border-radius: 50%; margin-right: 5px; vertical-align: -1px;
+      background: var(--c);
+    }
+    .hint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: var(--muted); }
+    aside {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      align-self: start;
+    }
+    h2 {
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin: 16px 0 8px; font-weight: 600;
+    }
+    h2:first-child { margin-top: 0; }
+    .axis-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    button {
+      font: inherit; color: var(--text); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 7px;
+      padding: 7px 6px; cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    .axis-buttons button { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    .axis-buttons button small { color: var(--muted); font-size: 11px; }
+    .axis-buttons button.active { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+    .axis-buttons button b { color: var(--c); }
+    .row { display: grid; grid-template-columns: 92px 1fr 52px; align-items: center; gap: 8px; margin: 5px 0; }
+    .row label { color: var(--muted); }
+    .row output { text-align: right; font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 100%; accent-color: var(--accent); }
+    .transport { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    td { padding: 2px 0; }
+    td:first-child { color: var(--muted); }
+    td.num { text-align: right; }
+    .note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+    @media (max-width: 760px) {
+      header { padding: 12px 16px 4px; }
+      main { grid-template-columns: 1fr; padding: 10px 16px 16px; }
+      #scene { height: 60vh; min-height: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dzhanibekov effect</h1>
+    <p>A free rigid body spun about its intermediate axis flips over periodically; about the other two axes it stays put.</p>
+  </header>
+  <main>
+    <section id="scene">
+      <div class="legend">
+        <span style="--c:#e15759">axis 1</span>
+        <span style="--c:#59a14f">axis 2</span>
+        <span style="--c:#4e79a7">axis 3</span>
+        <span style="--c:#f2b134">L (world, fixed)</span>
+      </div>
+      <div class="hint">drag to orbit · scroll to zoom</div>
+    </section>
+
+    <aside>
+      <h2>Spin about</h2>
+      <div class="axis-buttons">
+        <button data-axis="1" style="--c:#e15759"><b>Axis 1</b><small></small></button>
+        <button data-axis="2" style="--c:#59a14f"><b>Axis 2</b><small></small></button>
+        <button data-axis="3" style="--c:#4e79a7"><b>Axis 3</b><small></small></button>
+      </div>
+
+      <h2>Body (arm lengths)</h2>
+      <div class="row"><label for="a1">Arm 1</label><input id="a1" type="range" min="0.3" max="3" step="0.05" value="3"><output for="a1"></output></div>
+      <div class="row"><label for="a2">Arm 2</label><input id="a2" type="range" min="0.3" max="3" step="0.05" value="2"><output for="a2"></output></div>
+      <div class="row"><label for="a3">Arm 3</label><input id="a3" type="range" min="0.3" max="3" step="0.05" value="1"><output for="a3"></output></div>
+
+      <h2>Motion</h2>
+      <div class="row"><label for="omega">Spin rate Ω</label><input id="omega" type="range" min="0.5" max="10" step="0.1" value="3"><output for="omega"></output></div>
+      <div class="row"><label for="eps">Perturbation</label><input id="eps" type="range" min="-8" max="-1" step="0.5" value="-3"><output for="eps"></output></div>
+      <div class="row"><label for="speed">Sim speed</label><input id="speed" type="range" min="-1" max="1" step="0.05" value="0"><output for="speed"></output></div>
+      <div class="transport">
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+
+      <h2>State</h2>
+      <table>
+        <tr><td>t</td><td class="num" id="t"></td></tr>
+        <tr><td>ω₁, ω₂, ω₃</td><td class="num" id="w"></td></tr>
+        <tr><td>I₁, I₂, I₃</td><td class="num" id="I"></td></tr>
+        <tr><td>Growth rate λ</td><td class="num" id="lambda"></td></tr>
+        <tr><td>Flips seen</td><td class="num" id="flips"></td></tr>
+      </table>
+      <p class="note">Keys: 1 / 2 / 3 choose axis, space pauses, r resets. Changing the body, Ω or perturbation restarts the run.</p>
+    </aside>
+  </main>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

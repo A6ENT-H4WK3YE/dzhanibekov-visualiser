@@ -66,3 +66,55 @@ Disclosure log for AI-assisted work on this project (Claude Code, model Claude O
 **Checked:** 29/29 tests pass. Running the old perturbation through the same setup gives a first
 flip at t = 79.9, which would fail the new test. The new perturbation flips at t = 13.5, so the
 test does distinguish the two.
+
+## Milestone 2: 3D view and controls (2026-10-13)
+
+**Asked:** Build the 3D view and controls. The physics tests must still pass.
+
+**Produced:**
+- `src/physics.js`, two additions (both pure and tested):
+  - `momentsFromArms`: the body is three thin uniform rods along the body axes, centred on the
+    origin, so `I1 = (a2^3 + a3^3)/12` and cyclic. The longest arm lies along the
+    smallest-moment axis.
+  - `advance`: a fixed-step driver that carries leftover time between frames, so results do
+    not depend on frame rate.
+- `src/render.js`: Three.js 0.160 (cdnjs ES module) scene.
+  - Arms are coloured by axis, with a massless sphere on each + end so 180 degree flips are
+    visible on this symmetric body.
+  - A world-frame L arrow is recomputed from the state every frame.
+  - Simple drag-orbit and wheel-zoom camera.
+  - The physics world frame is used unchanged as the Three.js frame.
+- `src/main.js` + `index.html`:
+  - One-click "spin about axis 1/2/3" buttons, labelled smallest/intermediate/largest I.
+  - Sliders: arm lengths, which set I1..I3 so the drawn shape always matches the simulated
+    moments; spin rate; perturbation on a log scale; simulation speed on a log scale.
+  - Pause, Reset and keyboard shortcuts.
+  - Readout of t, w, I, lambda and a flip counter (sign changes of the spin-axis component).
+  - Light and dark themes; the layout stacks on narrow screens.
+- `src/main.js` is a new file not in the CLAUDE.md layout; it holds the glue between the
+  controls, physics and rendering.
+
+**Checked and how:**
+- 34/34 physics tests pass. New tests cover:
+  - `momentsFromArms`: the single-rod `m a^2/12` result, the ordering, and equal arms
+    giving equal moments.
+  - The default (3, 2, 1) body: it flips about axis 2 and is stable about 1 and 3.
+  - `advance`: the same 10 time units split into 60 fps frames, 7 fps frames or a single
+    frame gives a bit-identical state and exactly 10000 steps. `maxSteps` caps work.
+- Browser check: Chrome headless shell 131 was downloaded to a temporary directory (it is not
+  a project dependency) and driven over the DevTools protocol in real time at 5x speed for
+  about 50 time units per axis.
+  - Axis 1: 0 flips. Axis 2: 5 flips. Axis 3: 0 flips. No page errors.
+  - Screenshots confirmed the arms are coloured, the L arrow stays fixed, and a flip turns
+    the green +2 tip from up to down (w2 = -3.000).
+
+**What was wrong and had to be fixed:**
+- Headless Chrome's `--virtual-time-budget` does not drive `requestAnimationFrame`, so the
+  first automated check showed t = 0. It was replaced by a real-time DevTools-protocol run.
+- The tip spheres were oversized relative to the short arm 3 and were shrunk.
+
+**Written by hand:** nothing yet.
+
+**Assumptions to flag:** the "T-handle" is modelled as a symmetric three-arm cross (centred
+rods) rather than a one-sided T. This keeps the body frame the principal frame with the centre
+of mass at the origin. Rod thickness and the tip markers are left out of the inertia.

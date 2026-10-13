@@ -113,6 +113,35 @@ export function simulate(s, I, dt, nSteps, onStep) {
   return state;
 }
 
+// Advance by `simTime` of simulated time using whole fixed steps of size dt, independent of how
+// the caller slices time into frames. `carry` is leftover time (< dt) from the previous call;
+// pass back the returned carry next time. `maxSteps` caps work per call (excess time is dropped
+// so a stalled tab cannot cause a spiral of catch-up work). The 1e-9 slack stops sums like
+// 60 * (1/60) from losing a step to round-off.
+export function advance(s, I, dt, simTime, carry = 0, maxSteps = Infinity) {
+  const total = carry + simTime;
+  let steps = Math.floor(total / dt + 1e-9);
+  let newCarry = Math.max(0, total - steps * dt);
+  if (steps > maxSteps) {
+    steps = maxSteps;
+    newCarry = 0;
+  }
+  return { state: simulate(s, I, dt, steps), carry: newCarry, steps };
+}
+
+// ---------------------------------------------------------------------------
+// Body model: three thin uniform rods ("arms") lying along body axes 1, 2, 3, each centred on the
+// origin, with linear density rho (default 1), so arm k has mass rho * a_k. A thin rod of mass m
+// and length a has moment m a^2 / 12 about any perpendicular axis through its centre and zero
+// about its own axis. So arm j contributes rho a_j^3 / 12 to the two axes other than j:
+//   I1 = rho (a2^3 + a3^3) / 12,  I2 = rho (a1^3 + a3^3) / 12,  I3 = rho (a1^3 + a2^3) / 12.
+// The body frame is then the principal frame by symmetry. The LONGEST arm lies along the axis of
+// SMALLEST moment. Rod thickness is neglected (assumption).
+export function momentsFromArms(a, rho = 1) {
+  const c = a.map((x) => (rho * x * x * x) / 12);
+  return [c[1] + c[2], c[0] + c[2], c[0] + c[1]];
+}
+
 // ---------------------------------------------------------------------------
 // Conserved quantities.
 
