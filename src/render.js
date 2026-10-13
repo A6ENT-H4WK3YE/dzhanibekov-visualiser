@@ -8,8 +8,6 @@
 
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 
-export const AXIS_COLOURS = ['#e15759', '#59a14f', '#4e79a7']; // axis 1, 2, 3
-const L_COLOUR = '#f2b134';
 
 // Unit vectors of the three body axes in Three.js coordinates.
 const AXIS_DIRS = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
@@ -36,7 +34,7 @@ export function createScene(container) {
   const body = new THREE.Group();
   scene.add(body);
 
-  const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1, L_COLOUR);
+  const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1, 0xffffff);
   scene.add(arrow);
 
   let arrowLength = 1;
@@ -44,7 +42,9 @@ export function createScene(container) {
   // Build the body: arm k is a cylinder of length a[k] along body axis k, centred on the origin.
   // A sphere marks the + end of each arm. The spheres are visual only (massless): without them
   // a 180 degree flip of this symmetric body would look like nothing happened.
-  function setArms(a) {
+  // colours: { axes: [css colour for axis 1, 2, 3], L: css colour for the L arrow }.
+  function setArms(a, colours) {
+    arrow.setColor(colours.L);
     body.children.slice().forEach((child) => {
       body.remove(child);
       child.geometry?.dispose();
@@ -53,7 +53,7 @@ export function createScene(container) {
     const maxA = Math.max(...a);
     const radius = 0.035 * maxA;
     a.forEach((len, k) => {
-      const mat = new THREE.MeshStandardMaterial({ color: AXIS_COLOURS[k], roughness: 0.45 });
+      const mat = new THREE.MeshStandardMaterial({ color: colours.axes[k], roughness: 0.45 });
       const rod = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, len, 24), mat);
       // CylinderGeometry runs along +y; rotate it onto body axis k.
       rod.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), AXIS_DIRS[k]);

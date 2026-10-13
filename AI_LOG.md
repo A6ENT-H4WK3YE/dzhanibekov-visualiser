@@ -118,3 +118,48 @@ test does distinguish the two.
 **Assumptions to flag:** the "T-handle" is modelled as a symmetric three-arm cross (centred
 rods) rather than a one-sided T. This keeps the body frame the principal frame with the centre
 of mass at the origin. Rod thickness and the tip markers are left out of the inertia.
+
+## Milestone 3 and finalisation: plots, README, repository (2026-10-13)
+
+**Asked:** Write the README, finalise the folder, and commit to the repository under the
+username A6ENT-H4WK3YE.
+
+**Interpretation:** CLAUDE.md's definition of done requires the w time series and the
+conservation-drift display, so the plots (milestone 3, including the stretch polhode) were built
+before the README.
+
+**Produced:**
+- `src/plots.js` (2D canvas):
+  - A line chart with a hover crosshair and tooltip, used for w1..w3 over the last 30 time units
+    and for the log-scale relative drift of E, |L| and the world L vector with the 1e-6
+    tolerance line.
+  - A polhode view: w on the energy ellipsoid seen down axis 3. The background trajectories and
+    separatrix are closed-form curves, derived in the code comment by eliminating one component
+    between the energy and |L|^2 equations.
+- `src/main.js`: samples every 20 physics steps (not every frame). The drift history is
+  decimated when long. The state table shows the maximum drift so far.
+- `advance` gained an optional `onStep` callback, and its test checks the callback count.
+- Colours were replaced after a colour-blindness check (see below) and moved to CSS tokens with
+  separate light and dark values. The 3D body reads the same tokens.
+- `README.md`: how to run it, the controls, the physics and conventions, the full verification
+  table, and limitations.
+
+**Checked and how:**
+- 34/34 physics tests pass.
+- Headless Chrome, real time at 5x speed for about 40 time units per axis:
+  - Axis 2 flipped 4 times; axes 1 and 3 flipped 0 times.
+  - Maximum drift was 8e-14 (E), 4e-14 (|L|) and 9e-13 (L vector). No page errors.
+- Light and dark screenshots were inspected:
+  - The polhode trail for axis 2 lies on the separatrix through +2 and -2.
+  - For axis 1 the polhode point stays at +1.
+- Palettes were checked with a colour-vision-deficiency validator (OKLab Delta E) in both modes.
+
+**What was wrong and had to be fixed:**
+- The milestone 2 axis colours (red, green, blue) failed the colour-blindness check: axis 1 and
+  axis 2 were almost indistinguishable for deuteranopes (Delta E 0.7). They were replaced with
+  blue, orange and aqua, which pass in both modes.
+- Time-series lines were drawn past the left edge of the axis, because buffers are trimmed lazily.
+  Fixed by clipping to the plot area.
+- Log-axis ticks fell on 1e-17, 1e-13 and so on; they were realigned to 1e-16, 1e-12, ...
+
+**Written by hand:** nothing.

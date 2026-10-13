@@ -324,9 +324,11 @@ test('advance: same simulated time in different frame slices gives the identical
 });
 
 test('advance: maxSteps caps work and drops the excess time', () => {
-  const r = advance(initialState(1, OMEGA, EPS), I_DEFAULT, DEFAULT_DT, 5, 0, 100);
+  let calls = 0;
+  const r = advance(initialState(1, OMEGA, EPS), I_DEFAULT, DEFAULT_DT, 5, 0, 100, () => calls++);
   assert.equal(r.steps, 100);
   assert.equal(r.carry, 0);
+  assert.equal(calls, 100, 'onStep called once per step');
 });
 
 // ---------------------------------------------------------------------------

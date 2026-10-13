@@ -117,8 +117,9 @@ export function simulate(s, I, dt, nSteps, onStep) {
 // the caller slices time into frames. `carry` is leftover time (< dt) from the previous call;
 // pass back the returned carry next time. `maxSteps` caps work per call (excess time is dropped
 // so a stalled tab cannot cause a spiral of catch-up work). The 1e-9 slack stops sums like
-// 60 * (1/60) from losing a step to round-off.
-export function advance(s, I, dt, simTime, carry = 0, maxSteps = Infinity) {
+// 60 * (1/60) from losing a step to round-off. `onStep` is passed through to simulate so callers
+// can sample on the physics step rather than on the frame.
+export function advance(s, I, dt, simTime, carry = 0, maxSteps = Infinity, onStep) {
   const total = carry + simTime;
   let steps = Math.floor(total / dt + 1e-9);
   let newCarry = Math.max(0, total - steps * dt);
@@ -126,7 +127,7 @@ export function advance(s, I, dt, simTime, carry = 0, maxSteps = Infinity) {
     steps = maxSteps;
     newCarry = 0;
   }
-  return { state: simulate(s, I, dt, steps), carry: newCarry, steps };
+  return { state: simulate(s, I, dt, steps, onStep), carry: newCarry, steps };
 }
 
 // ---------------------------------------------------------------------------
